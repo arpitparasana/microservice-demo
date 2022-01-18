@@ -1,7 +1,5 @@
 package io.movie.moviecatalogueservice.resource;
 
-import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import io.movie.moviecatalogueservice.model.CatalogItem;
 import io.movie.moviecatalogueservice.model.Movie;
-import io.movie.moviecatalogueservice.model.Rating;
 import io.movie.moviecatalogueservice.model.UserRating;
 
 @RestController
