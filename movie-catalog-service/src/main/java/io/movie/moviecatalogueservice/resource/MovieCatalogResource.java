@@ -20,18 +20,26 @@ public class MovieCatalogResource {
 
 	@Autowired
 	private RestTemplate restTemplate;
-	
+
+//	@Autowired
+//	private WebClient.Builder webClientBuilder;
+
 	@RequestMapping("/{userId}")
 	public List<CatalogItem> getCatalog(@PathVariable("userId") String userId) {
-		
-		List<Rating> ratings = Arrays.asList(
-				new Rating("tr", 10), new Rating("lotr", 9)
-		);
-				
-		return ratings.stream().map(rating ->  {
+
+		List<Rating> ratings = Arrays.asList(new Rating("tr", 10), new Rating("lotr", 9));
+
+		return ratings.stream().map(rating -> {
 			Movie movie = restTemplate.getForObject("http://localhost:8082/movies/" + rating.getMovieId(), Movie.class);
+
+			/*
+			 * Movie movie = webClientBuilder.build() .get()
+			 * .uri("http://localhost:8082/movies/" + rating.getMovieId()) .retrieve()
+			 * .bodyToMono(Movie.class) .block();
+			 */
+
 			return new CatalogItem(movie.getMovieName(), "Awesome movie", rating.getRating());
 		}).collect(Collectors.toList());
-		
+
 	}
 }
