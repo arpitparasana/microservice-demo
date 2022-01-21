@@ -14,6 +14,7 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 import io.movie.moviecatalogueservice.model.CatalogItem;
 import io.movie.moviecatalogueservice.model.Movie;
+import io.movie.moviecatalogueservice.model.Rating;
 import io.movie.moviecatalogueservice.model.UserRating;
 
 @RestController
@@ -27,30 +28,40 @@ public class MovieCatalogResource {
 //	private WebClient.Builder webClientBuilder;
 
 	@RequestMapping("/{userId}")
-	@HystrixCommand(fallbackMethod = "getFallBackCatalog")
 	public List<CatalogItem> getCatalog(@PathVariable("userId") String userId) {
 
-		UserRating userRatings = 
-				restTemplate.getForObject("http://rating-info/ratings/users/" + userId, 
-						UserRating.class);
+		UserRating userRatings = getRatings(userId);
 		
-		
-		return userRatings.getRatings().stream().map(rating -> {
-			Movie movie = restTemplate.getForObject("http://movie-info/movies/" + rating.getMovieId(), Movie.class);
-
-			/* Alternative WebClient way
-			 * Movie movie = webClientBuilder.build() .get()
-			 * .uri("http://localhost:8082/movies/" + rating.getMovieId()) .retrieve()
-			 * .bodyToMono(Movie.class) .block();
-			 */
-
-			return new CatalogItem(movie.getMovieName(), "Awesome movie", rating.getRating());
-		}).collect(Collectors.toList());
+		return userRatings.getRatings().stream()
+				.map(rating -> getCatalogItem(rating)).collect(Collectors.toList());
 
 	}
+
+	@HystrixCommand(fallbackMethod = "getFallBackCatalogItem")
+	private CatalogItem getCatalogItem(Rating rating) {
+		Movie movie = restTemplate.getForObject("http://movie-info/movies/" + rating.getMovieId(), Movie.class);
+		return new CatalogItem(movie.getMovieName(), "Awesome movie", rating.getRating());
+	}
 	
-	public List<CatalogItem> getFallBackCatalog(@PathVariable("userId") String userId) {
-		return Arrays.asList(new CatalogItem("No movie", "", 1));
+
+	public CatalogItem getFallBackCatalogItem(Rating rating) {
+		return new CatalogItem("Movie name not found", "", rating.getRating());
+	}
+	
+
+	@HystrixCommand(fallbackMethod = "getFallBackUserRating")
+	private UserRating getRatings(String userId) {
+		return restTemplate.getForObject("http://rating-info/ratings/users/" + userId, 
+				UserRating.class);
+	}
+	
+	@SuppressWarnings("unused")
+	private UserRating getFallBackUserRating(String userId) {
+		UserRating rating = new UserRating();
+		rating.setRatings(Arrays.asList(new Rating("0",0)));
+		rating.setUserId(userId);
+		
+		return rating;
 	
 	}
 }
